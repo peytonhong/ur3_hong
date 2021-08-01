@@ -53,6 +53,7 @@ from math import pi
 from std_msgs.msg import String
 from moveit_commander.conversions import pose_to_list
 import csv
+import numpy as np
 ## END_SUB_TUTORIAL
 
 def all_close(goal, actual, tolerance):
@@ -186,6 +187,58 @@ class MoveGroupPythonIntefaceTutorial(object):
     current_joints = self.group.get_current_joint_values()
     return all_close(joint_goal, current_joints, 0.01)
 
+
+  def go_to_random_pose_goal(self):
+    # Copy class variables to local variables to make the web tutorials more clear.
+    # In practice, you should use the class variables directly unless you have a good
+    # reason not to.
+    group = self.group
+
+    ## BEGIN_SUB_TUTORIAL plan_to_pose
+    ##
+    ## Planning to a Pose Goal
+    ## ^^^^^^^^^^^^^^^^^^^^^^^
+    ## We can plan a motion for this group to a desired pose for the
+    ## end-effector:
+    
+    # pose_goal = geometry_msgs.msg.Pose()
+    # pose_goal.orientation.w = 1.0
+    # pose_goal.position.x = 0.4
+    # pose_goal.position.y = 0.1
+    # pose_goal.position.z = 0.4
+    # group.set_pose_target(pose_goal)
+
+    range_min = 0.1
+    range_max = 0.4
+    range_diff = range_max - range_min
+    for i in range(10):
+
+      pose_goal = geometry_msgs.msg.Pose()
+      pose_goal.orientation.w = 1.0
+      pose_goal.position.x = (np.random.rand()*range_diff + range_min) * np.random.choice([-1, 1])
+      pose_goal.position.y = np.random.rand()*range_diff + range_min * np.random.choice([-1, 1])
+      pose_goal.position.z = np.random.rand()*range_diff + 0.2
+      group.set_pose_target(pose_goal)
+
+      ## Now, we call the planner to compute the plan and execute it.
+      plan = group.go(wait=True)
+      
+      # Calling `stop()` ensures that there is no residual movement
+      group.stop()
+      # It is always good to clear your targets after planning with poses.
+      # Note: there is no equivalent function for clear_joint_value_targets()
+      group.clear_pose_targets()
+
+      ## END_SUB_TUTORIAL
+
+      # For testing:
+      # Note that since this section of code will not be included in the tutorials
+      # we use the class variable rather than the copied state variable
+      current_pose = self.group.get_current_pose().pose
+      print(i, current_pose)   
+    
+    return all_close(pose_goal, current_pose, 0.01)
+
   def go_to_pose_goal(self):
     # Copy class variables to local variables to make the web tutorials more clear.
     # In practice, you should use the class variables directly unless you have a good
@@ -207,6 +260,7 @@ class MoveGroupPythonIntefaceTutorial(object):
 
     ## Now, we call the planner to compute the plan and execute it.
     plan = group.go(wait=True)
+    print(plan)
     # Calling `stop()` ensures that there is no residual movement
     group.stop()
     # It is always good to clear your targets after planning with poses.
@@ -255,7 +309,7 @@ class MoveGroupPythonIntefaceTutorial(object):
                                        waypoints,   # waypoints to follow
                                        0.01,        # eef_step
                                        0.0)         # jump_threshold
-
+        
     # Note: We are just planning, not asking move_group to actually move the robot yet:
     return plan, fraction
 
@@ -445,18 +499,23 @@ def main():
     raw_input()
     tutorial = MoveGroupPythonIntefaceTutorial()
 
-    print "============ Press `Enter` to execute a movement using a joint state goal ..."
-    raw_input()
-    tutorial.go_to_joint_state()
-    exit()
-    print "============ Press `Enter` to execute a movement using a pose goal ..."
-    raw_input()
-    tutorial.go_to_pose_goal()
+    # print "============ Press `Enter` to execute a movement using a joint state goal ..."
+    # raw_input()
+    # tutorial.go_to_joint_state()
+    
+    # print "============ Press `Enter` to execute a movement using a pose goal ..."
+    # raw_input()
+    # tutorial.go_to_pose_goal()
 
-    print "============ Press `Enter` to plan and display a Cartesian path ..."
+    print "============ Press `Enter` to execute a movement using a RANDOM pose goal ..."
+    raw_input()
+    tutorial.go_to_random_pose_goal()    
+    exit()
+
+    print "============ Press `Enter` to plan and display a Cartesian path ..."       
     raw_input()
     cartesian_plan, fraction = tutorial.plan_cartesian_path()
-
+    
     print "============ Press `Enter` to display a saved trajectory (this will replay the Cartesian path)  ..."
     raw_input()
     tutorial.display_trajectory(cartesian_plan)
