@@ -54,6 +54,9 @@ from std_msgs.msg import String
 from moveit_commander.conversions import pose_to_list
 import csv
 import numpy as np
+from kinematics_interface import StateValidity
+from moveit_msgs.msg import RobotState, RobotTrajectory, DisplayTrajectory, DisplayRobotState
+import time
 ## END_SUB_TUTORIAL
 
 def all_close(goal, actual, tolerance):
@@ -111,7 +114,9 @@ class MoveGroupPythonIntefaceTutorial(object):
     display_trajectory_publisher = rospy.Publisher('/move_group/display_planned_path',
                                                    moveit_msgs.msg.DisplayTrajectory,
                                                    queue_size=20)
-
+    
+    self.robot_state_collision_pub = rospy.Publisher('/robot_collision_state', DisplayRobotState)
+    self.sv = StateValidity()
     ## END_SUB_TUTORIAL
 
     ## BEGIN_SUB_TUTORIAL basic_info
@@ -146,6 +151,33 @@ class MoveGroupPythonIntefaceTutorial(object):
     self.planning_frame = planning_frame
     self.eef_link = eef_link
     self.group_names = group_names
+
+  def checkTrajectoryValidity(self, robot_trajectory, groups=[]):
+    """Given a robot trajectory, deduce it's groups and check it's validity on each point of the traj
+    returns True if valid, False otherwise
+    It's considered not valid if any point is not valid"""
+    #r = RobotTrajectory()
+    init_time = time.time()
+    if len(groups) > 0:
+        groups_to_check = groups
+    else:
+        groups_to_check = ['manipulator'] # Automagic group deduction... giving a group that includes everything
+    for traj_point in robot_trajectory.joint_trajectory.points:
+        rs = RobotState()
+        rs.joint_state.name = robot_trajectory.joint_trajectory.joint_names
+        rs.joint_state.position = traj_point.positions
+        for group in groups_to_check:
+            result = self.sv.getStateValidity(rs, group)#, constraints)
+            if not result.valid: # if one point is not valid, the trajectory is not valid
+                rospy.logerr("Trajectory is not valid at point (RobotState):" + str(rs) + "with result of StateValidity: " + str(result))
+                rospy.logerr("published in /robot_collision_state the conflicting state")
+                drs = DisplayRobotState()
+                drs.state = rs
+                self.robot_state_collision_pub.publish(drs)
+                return False
+    fin_time = time.time()
+    rospy.logwarn("Trajectory validity of " + str(len(robot_trajectory.joint_trajectory.points)) + " points took " + str(fin_time - init_time))
+    return True
 
   def go_to_joint_state(self):
     # Copy class variables to local variables to make the web tutorials more clear.
@@ -309,7 +341,11 @@ class MoveGroupPythonIntefaceTutorial(object):
                                        waypoints,   # waypoints to follow
                                        0.01,        # eef_step
                                        0.0)         # jump_threshold
-        
+    
+    if self.checkTrajectoryValidity(plan):
+      rospy.loginfo("Trajectory is fine.")
+    else:
+      rospy.loginfo("Trajectory is bad.")
     # Note: We are just planning, not asking move_group to actually move the robot yet:
     return plan, fraction
 
@@ -499,18 +535,18 @@ def main():
     raw_input()
     tutorial = MoveGroupPythonIntefaceTutorial()
 
-    # print "============ Press `Enter` to execute a movement using a joint state goal ..."
-    # raw_input()
-    # tutorial.go_to_joint_state()
-    
-    # print "============ Press `Enter` to execute a movement using a pose goal ..."
-    # raw_input()
-    # tutorial.go_to_pose_goal()
-
-    print "============ Press `Enter` to execute a movement using a RANDOM pose goal ..."
+    print "============ Press `Enter` to execute a movement using a joint state goal ..."
     raw_input()
-    tutorial.go_to_random_pose_goal()    
-    exit()
+    tutorial.go_to_joint_state()
+    
+    print "============ Press `Enter` to execute a movement using a pose goal ..."
+    raw_input()
+    tutorial.go_to_pose_goal()
+
+    # print "============ Press `Enter` to execute a movement using a RANDOM pose goal ..."
+    # raw_input()
+    # tutorial.go_to_random_pose_goal()    
+    # exit()
 
     print "============ Press `Enter` to plan and display a Cartesian path ..."       
     raw_input()
