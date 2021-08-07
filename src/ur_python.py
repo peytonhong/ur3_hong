@@ -175,11 +175,12 @@ class MoveGroupPythonIntefaceTutorial(object):
     self.robot_state_collision_pub = rospy.Publisher('/robot_collision_state', DisplayRobotState)
     self.sv = StateValidity()
 
-    self.plane_pose = geometry_msgs.msg.Pose()
-    p.pose.position.x = 0
-    p.pose.position.y = 0
-    p.pose.position.z = 0
-    scene.add_plane("ground_plane", p)
+    plane_pose = geometry_msgs.msg.PoseStamped()
+    plane_pose.header.frame_id = robot.get_planning_frame()
+    plane_pose.pose.position.x = 0
+    plane_pose.pose.position.y = 0
+    plane_pose.pose.position.z = 0.2
+    scene.add_plane("ground_plane", plane_pose)
 
     ## END_SUB_TUTORIAL
 
@@ -317,6 +318,9 @@ class MoveGroupPythonIntefaceTutorial(object):
       group.set_pose_target(pose_goal)
 
       ## Now, we call the planner to compute the plan and execute it.
+      plan = group.plan(pose_goal)
+      # print(plan)
+      
       plan = group.go(wait=True)
       
       # Calling `stop()` ensures that there is no residual movement
@@ -599,18 +603,18 @@ def main():
     raw_input()
     tutorial = MoveGroupPythonIntefaceTutorial()
 
-    print "============ Press `Enter` to execute a movement using a joint state goal ..."
-    raw_input()
-    tutorial.go_to_joint_state()
-    
-    print "============ Press `Enter` to execute a movement using a pose goal ..."
-    raw_input()
-    tutorial.go_to_pose_goal()
-
-    # print "============ Press `Enter` to execute a movement using a RANDOM pose goal ..."
+    # print "============ Press `Enter` to execute a movement using a joint state goal ..."
     # raw_input()
-    # tutorial.go_to_random_pose_goal()    
-    # exit()
+    # tutorial.go_to_joint_state()
+    
+    # print "============ Press `Enter` to execute a movement using a pose goal ..."
+    # raw_input()
+    # tutorial.go_to_pose_goal()
+
+    print "============ Press `Enter` to execute a movement using a RANDOM pose goal ..."
+    raw_input()
+    tutorial.go_to_random_pose_goal()    
+    exit()
 
     print "============ Press `Enter` to plan and display a Cartesian path ..."       
     raw_input()

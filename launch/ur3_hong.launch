@@ -1,0 +1,6 @@
+<launch>
+
+  <node name="ur_python" pkg="ur3_hong" type="ur_python.py" respawn="false" output="screen">
+  </node>
+
+</launch>
