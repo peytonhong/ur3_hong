@@ -59,6 +59,16 @@ from moveit_msgs.msg import RobotState, RobotTrajectory, DisplayTrajectory, Disp
 from moveit_msgs.srv import GetStateValidityRequest, GetStateValidity
 from sensor_msgs.msg import JointState
 import time
+import pybullet as p
+import pybullet_data
+
+physicsClient = p.connect(p.DIRECT)
+p.setAdditionalSearchPath(pybullet_data.getDataPath())
+planeId = p.loadURDF("plane.urdf", [0, 0, 0])
+robotId = p.loadURDF("/home/hyosung/catkin_ws/src/ur3_hong/src/urdfs/ur3/ur3_new.urdf", [0, 0, 0], useFixedBase=True)
+
+
+
 ## END_SUB_TUTORIAL
 class StateValidity():
     def __init__(self):
@@ -319,8 +329,28 @@ class MoveGroupPythonIntefaceTutorial(object):
 
       ## Now, we call the planner to compute the plan and execute it.
       plan = group.plan(pose_goal)
-      # print(plan)
+      # print(plan.joint_trajectory.points[0].positions)
+      trajectory = plan.joint_trajectory.points
+      # print(trajectory)
       
+      num_collisions = 0
+      for k in range(len(trajectory)):
+        jointAngles = trajectory[k].positions
+        for j in range(len(jointAngles)):
+          p.resetJointState(bodyUniqueId=robotId,
+                          jointIndex=j,
+                          targetValue=(jointAngles[j]),
+                          )
+        p.stepSimulation()
+        collision_result = p.getContactPoints(bodyA=planeId, bodyB=robotId, physicsClientId=physicsClient)
+        num_collisions += len(collision_result)
+        print(len(collision_result))
+      
+      if num_collisions > 0: # means contact(collision) occured at least once, so skip this plan
+        print('Skipping this plan due to collision.')
+        group.clear_pose_targets()
+        continue
+
       plan = group.go(wait=True)
       
       # Calling `stop()` ensures that there is no residual movement
@@ -334,8 +364,10 @@ class MoveGroupPythonIntefaceTutorial(object):
       # For testing:
       # Note that since this section of code will not be included in the tutorials
       # we use the class variable rather than the copied state variable
+      
       current_pose = self.group.get_current_pose().pose
-      print(i, current_pose)   
+      current_joints = self.group.get_current_joint_values()
+      print(i, current_joints)   
     
     return all_close(pose_goal, current_pose, 0.01)
 
@@ -603,9 +635,9 @@ def main():
     raw_input()
     tutorial = MoveGroupPythonIntefaceTutorial()
 
-    # print "============ Press `Enter` to execute a movement using a joint state goal ..."
-    # raw_input()
-    # tutorial.go_to_joint_state()
+    print "============ Press `Enter` to execute a movement using a joint state goal ..."
+    raw_input()
+    tutorial.go_to_joint_state()
     
     # print "============ Press `Enter` to execute a movement using a pose goal ..."
     # raw_input()
