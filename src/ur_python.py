@@ -62,11 +62,11 @@ import time
 import pybullet as p
 import pybullet_data
 
-physicsClient = p.connect(p.DIRECT)
+physicsClient = p.connect(p.GUI)
 p.setAdditionalSearchPath(pybullet_data.getDataPath())
-planeId = p.loadURDF("plane.urdf", [0, 0, 0])
-robotId = p.loadURDF("/home/hyosung/catkin_ws/src/ur3_hong/src/urdfs/ur3/ur3_new.urdf", [0, 0, 0], useFixedBase=True)
-
+planeId = p.loadURDF("plane.urdf", [0, 0, -0.1])
+robotId = p.loadURDF("/home/hyosung/catkin_ws/src/ur3_hong/src/urdfs/ur3/ur3_gazebo.urdf", [0, 0, 0], useFixedBase=True)
+p.resetBasePositionAndOrientation(robotId, [0, 0, 0.0], p.getQuaternionFromEuler([0,0,0]))
 
 
 ## END_SUB_TUTORIAL
@@ -158,7 +158,7 @@ class MoveGroupPythonIntefaceTutorial(object):
     ## First initialize `moveit_commander`_ and a `rospy`_ node:
     moveit_commander.roscpp_initialize(sys.argv)
     rospy.init_node('move_group_python_interface_tutorial',
-                    anonymous=True)
+                    anonymous=True, disable_signals=True)
 
     ## Instantiate a `RobotCommander`_ object. This object is the outer-level interface to
     ## the robot:
@@ -185,13 +185,7 @@ class MoveGroupPythonIntefaceTutorial(object):
     self.robot_state_collision_pub = rospy.Publisher('/robot_collision_state', DisplayRobotState)
     self.sv = StateValidity()
 
-    plane_pose = geometry_msgs.msg.PoseStamped()
-    plane_pose.header.frame_id = robot.get_planning_frame()
-    plane_pose.pose.position.x = 0
-    plane_pose.pose.position.y = 0
-    plane_pose.pose.position.z = 0.2
-    scene.add_plane("ground_plane", plane_pose)
-
+    
     ## END_SUB_TUTORIAL
 
     ## BEGIN_SUB_TUTORIAL basic_info
@@ -208,13 +202,15 @@ class MoveGroupPythonIntefaceTutorial(object):
 
     # We can get a list of all the groups in the robot:
     group_names = robot.get_group_names()
-    print "============ Robot Groups:", robot.get_group_names()
+    print "============ Robot Groups:", group_names
 
     # Sometimes for debugging it is useful to print the entire state of the
     # robot:
     print "============ Printing robot state"
     print robot.get_current_state()
     print ""
+
+    
     ## END_SUB_TUTORIAL
 
     # Misc variables
@@ -226,6 +222,21 @@ class MoveGroupPythonIntefaceTutorial(object):
     self.planning_frame = planning_frame
     self.eef_link = eef_link
     self.group_names = group_names
+
+    # scene.remove_world_object("ground_plane")
+    plane_pose = geometry_msgs.msg.PoseStamped()
+    plane_pose.header.frame_id = group.get_planning_frame()
+    plane_pose.pose.position.x = 0
+    plane_pose.pose.position.y = 0
+    plane_pose.pose.position.z = 0
+    plane_pose.pose.orientation.w = 1.0
+    self.scene.add_plane("ground_plane", plane_pose)
+    # self.scene.add_box("box", plane_pose, (10.0, 10.0, 1.0))
+    self.box_name = "ground_plane"
+    self.wait_for_state_update(box_is_known=True, timeout=4)
+    # Check objects
+    print("============ Check objects")
+    print(scene.get_known_object_names())
 
   def checkTrajectoryValidity(self, robot_trajectory, groups=[]):
     """Given a robot trajectory, deduce it's groups and check it's validity on each point of the traj
@@ -315,8 +326,8 @@ class MoveGroupPythonIntefaceTutorial(object):
     # pose_goal.position.z = 0.4
     # group.set_pose_target(pose_goal)
 
-    range_min = 0.1
-    range_max = 0.4
+    range_min = 0.3
+    range_max = 0.45
     range_diff = range_max - range_min
     for i in range(10):
 
@@ -324,7 +335,7 @@ class MoveGroupPythonIntefaceTutorial(object):
       pose_goal.orientation.w = 1.0
       pose_goal.position.x = (np.random.rand()*range_diff + range_min) * np.random.choice([-1, 1])
       pose_goal.position.y = np.random.rand()*range_diff + range_min * np.random.choice([-1, 1])
-      pose_goal.position.z = np.random.rand()*range_diff + 0.2
+      pose_goal.position.z = np.random.rand()*range_diff + range_min
       group.set_pose_target(pose_goal)
 
       ## Now, we call the planner to compute the plan and execute it.
@@ -332,7 +343,9 @@ class MoveGroupPythonIntefaceTutorial(object):
       # print(plan.joint_trajectory.points[0].positions)
       trajectory = plan.joint_trajectory.points
       # print(trajectory)
-      
+      for k2 in range(len(trajectory)):
+        print(trajectory[k2].positions)
+
       num_collisions = 0
       for k in range(len(trajectory)):
         jointAngles = trajectory[k].positions
@@ -345,10 +358,12 @@ class MoveGroupPythonIntefaceTutorial(object):
         collision_result = p.getContactPoints(bodyA=planeId, bodyB=robotId, physicsClientId=physicsClient)
         num_collisions += len(collision_result)
         print(len(collision_result))
+        time.sleep(0.5)
       
       if num_collisions > 0: # means contact(collision) occured at least once, so skip this plan
         print('Skipping this plan due to collision.')
         group.clear_pose_targets()
+        group.stop()
         continue
 
       plan = group.go(wait=True)
@@ -519,11 +534,11 @@ class MoveGroupPythonIntefaceTutorial(object):
       # Test if the box is in attached objects
       attached_objects = scene.get_attached_objects([box_name])
       is_attached = len(attached_objects.keys()) > 0
-
+      print('scene.get_attached_objects(): ', attached_objects)
       # Test if the box is in the scene.
       # Note that attaching the box will remove it from known_objects
       is_known = box_name in scene.get_known_object_names()
-
+      print('scene.get_known_object_names():', scene.get_known_object_names())
       # Test if we are in the expected state
       if (box_is_attached == is_attached) and (box_is_known == is_known):
         return True
@@ -635,9 +650,9 @@ def main():
     raw_input()
     tutorial = MoveGroupPythonIntefaceTutorial()
 
-    print "============ Press `Enter` to execute a movement using a joint state goal ..."
-    raw_input()
-    tutorial.go_to_joint_state()
+    # print "============ Press `Enter` to execute a movement using a joint state goal ..."
+    # raw_input()
+    # tutorial.go_to_joint_state()
     
     # print "============ Press `Enter` to execute a movement using a pose goal ..."
     # raw_input()
