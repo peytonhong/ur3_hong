@@ -151,8 +151,6 @@ class MoveGroupPythonIntefaceTutorial(object):
     print "============ Printing robot state"
     print robot.get_current_state()
     print ""
-
-    
     ## END_SUB_TUTORIAL
 
     # Misc variables
@@ -295,7 +293,8 @@ class MoveGroupPythonIntefaceTutorial(object):
         group.stop()
         continue
       print('Robot Move.')
-      plan = group.go(wait=True)
+      # plan = group.go(wait=True)
+      group.execute(plan, wait=True)
       
       # Calling `stop()` ensures that there is no residual movement
       group.stop()
@@ -372,7 +371,7 @@ class MoveGroupPythonIntefaceTutorial(object):
       
       current_pose = self.group.get_current_pose().pose
       current_joints = self.group.get_current_joint_values()
-      print(i, 'current:', current_joints)
+      print(i, 'current:', type(current_joints), current_joints)
     
     return all_close(pose_goal, current_pose, 0.01)
 
