@@ -56,74 +56,20 @@ import csv
 import numpy as np
 # from kinematics_interface import StateValidity
 from moveit_msgs.msg import RobotState, RobotTrajectory, DisplayTrajectory, DisplayRobotState
-from moveit_msgs.srv import GetStateValidityRequest, GetStateValidity
 from sensor_msgs.msg import JointState
 import time
-import pybullet as p
-import pybullet_data
+from tf.transformations import euler_from_quaternion, quaternion_from_euler
 
-physicsClient = p.connect(p.GUI)
-p.setAdditionalSearchPath(pybullet_data.getDataPath())
-planeId = p.loadURDF("plane.urdf", [0, 0, -0.1])
-robotId = p.loadURDF("/home/hyosung/catkin_ws/src/ur3_hong/src/urdfs/ur3/ur3_gazebo.urdf", [0, 0, 0], useFixedBase=True)
-p.resetBasePositionAndOrientation(robotId, [0, 0, 0.0], p.getQuaternionFromEuler([0,0,0]))
+# import pybullet as p
+# import pybullet_data
+# physicsClient = p.connect(p.GUI)
+# p.setAdditionalSearchPath(pybullet_data.getDataPath())
+# planeId = p.loadURDF("plane.urdf", [0, 0, -0.1])
+# robotId = p.loadURDF("/home/hyosung/catkin_ws/src/ur3_hong/src/urdfs/ur3/ur3_gazebo.urdf", [0, 0, 0], useFixedBase=True)
+# p.resetBasePositionAndOrientation(robotId, [0, 0, 0.0], p.getQuaternionFromEuler([0,0,0]))
 
 
 ## END_SUB_TUTORIAL
-class StateValidity():
-    def __init__(self):
-        # subscribe to joint joint states
-        rospy.Subscriber("joint_states", JointState, self.jointStatesCB, queue_size=1)
-        # prepare service for collision check
-        self.sv_srv = rospy.ServiceProxy('/check_state_validity', GetStateValidity)
-        # wait for service to become available
-        self.sv_srv.wait_for_service()
-        rospy.loginfo('service is avaiable')
-        # prepare msg to interface with moveit
-        self.rs = RobotState()
-        self.rs.joint_state.name = ['joint1','joint2']
-        self.rs.joint_state.position = [0.0, 0.0]
-        self.joint_states_received = False
-
-
-    def checkCollision(self):
-        '''
-        check if robotis in collision
-        '''
-        if self.getStateValidity().valid:
-            rospy.loginfo('robot not in collision, all ok!')
-        else:
-            rospy.logwarn('robot in collision')
-
-
-    def jointStatesCB(self, msg):
-        '''
-        update robot state
-        '''
-        self.rs.joint_state.position = [msg.position[0], msg.position[1]]
-        self.joint_states_received = True
-
-
-    def getStateValidity(self, group_name='acrobat', constraints=None):
-        '''
-        Given a RobotState and a group name and an optional Constraints
-        return the validity of the State
-        '''
-        gsvr = GetStateValidityRequest()
-        gsvr.robot_state = self.rs
-        gsvr.group_name = group_name
-        if constraints != None:
-            gsvr.constraints = constraints
-        result = self.sv_srv.call(gsvr)
-        return result
-
-
-    def start_collision_checker(self):
-        while not self.joint_states_received:
-            rospy.sleep(0.1)
-        rospy.loginfo('joint states received! continue')
-        self.checkCollision()
-        rospy.spin()
 
 
 def all_close(goal, actual, tolerance):
@@ -181,11 +127,7 @@ class MoveGroupPythonIntefaceTutorial(object):
     display_trajectory_publisher = rospy.Publisher('/move_group/display_planned_path',
                                                    moveit_msgs.msg.DisplayTrajectory,
                                                    queue_size=20)
-    
-    self.robot_state_collision_pub = rospy.Publisher('/robot_collision_state', DisplayRobotState)
-    self.sv = StateValidity()
-
-    
+        
     ## END_SUB_TUTORIAL
 
     ## BEGIN_SUB_TUTORIAL basic_info
@@ -223,47 +165,34 @@ class MoveGroupPythonIntefaceTutorial(object):
     self.eef_link = eef_link
     self.group_names = group_names
 
-    # scene.remove_world_object("ground_plane")
+    self.plane_name = "ground_plane"
+    self.box_name = "box"
+
+    scene.remove_world_object(self.plane_name)
+    scene.remove_world_object(self.box_name)
     plane_pose = geometry_msgs.msg.PoseStamped()
     plane_pose.header.frame_id = group.get_planning_frame()
     plane_pose.pose.position.x = 0
     plane_pose.pose.position.y = 0
     plane_pose.pose.position.z = 0
     plane_pose.pose.orientation.w = 1.0
-    self.scene.add_plane("ground_plane", plane_pose)
-    # self.scene.add_box("box", plane_pose, (10.0, 10.0, 1.0))
-    self.box_name = "ground_plane"
+    # add plane     
+    
+    self.scene.add_plane(self.plane_name, plane_pose)   
+    # add box
+    box_pose = geometry_msgs.msg.PoseStamped()
+    box_pose.header.frame_id = group.get_planning_frame()
+    box_pose.pose.position.x = 0
+    box_pose.pose.position.y = -0.3
+    box_pose.pose.position.z = 0.3
+    box_pose.pose.orientation.w = 1.0
+    self.scene.add_box(self.box_name, box_pose, (0.2, 0.2, 0.2))
+    
     self.wait_for_state_update(box_is_known=True, timeout=4)
     # Check objects
     print("============ Check objects")
     print(scene.get_known_object_names())
 
-  def checkTrajectoryValidity(self, robot_trajectory, groups=[]):
-    """Given a robot trajectory, deduce it's groups and check it's validity on each point of the traj
-    returns True if valid, False otherwise
-    It's considered not valid if any point is not valid"""
-    #r = RobotTrajectory()
-    init_time = time.time()
-    if len(groups) > 0:
-        groups_to_check = groups
-    else:
-        groups_to_check = ['manipulator'] # Automagic group deduction... giving a group that includes everything
-    for traj_point in robot_trajectory.joint_trajectory.points:
-        rs = RobotState()
-        rs.joint_state.name = robot_trajectory.joint_trajectory.joint_names
-        rs.joint_state.position = traj_point.positions
-        for group in groups_to_check:
-            result = self.sv.getStateValidity(rs, group)#, constraints)
-            if not result.valid: # if one point is not valid, the trajectory is not valid
-                rospy.logerr("Trajectory is not valid at point (RobotState):" + str(rs) + "with result of StateValidity: " + str(result))
-                rospy.logerr("published in /robot_collision_state the conflicting state")
-                drs = DisplayRobotState()
-                drs.state = rs
-                self.robot_state_collision_pub.publish(drs)
-                return False
-    fin_time = time.time()
-    rospy.logwarn("Trajectory validity of " + str(len(robot_trajectory.joint_trajectory.points)) + " points took " + str(fin_time - init_time))
-    return True
 
   def go_to_joint_state(self):
     # Copy class variables to local variables to make the web tutorials more clear.
@@ -330,7 +259,7 @@ class MoveGroupPythonIntefaceTutorial(object):
     range_max = 0.45
     range_diff = range_max - range_min
     for i in range(10):
-
+      print('Setting random pose.')
       pose_goal = geometry_msgs.msg.Pose()
       pose_goal.orientation.w = 1.0
       pose_goal.position.x = (np.random.rand()*range_diff + range_min) * np.random.choice([-1, 1])
@@ -343,8 +272,8 @@ class MoveGroupPythonIntefaceTutorial(object):
       # print(plan.joint_trajectory.points[0].positions)
       trajectory = plan.joint_trajectory.points
       # print(trajectory)
-      for k2 in range(len(trajectory)):
-        print(trajectory[k2].positions)
+      # for k2 in range(len(trajectory)):
+      #   print(trajectory[k2].positions)
 
       num_collisions = 0
       for k in range(len(trajectory)):
@@ -365,7 +294,7 @@ class MoveGroupPythonIntefaceTutorial(object):
         group.clear_pose_targets()
         group.stop()
         continue
-
+      print('Robot Move.')
       plan = group.go(wait=True)
       
       # Calling `stop()` ensures that there is no residual movement
@@ -383,6 +312,67 @@ class MoveGroupPythonIntefaceTutorial(object):
       current_pose = self.group.get_current_pose().pose
       current_joints = self.group.get_current_joint_values()
       print(i, current_joints)   
+    
+    return all_close(pose_goal, current_pose, 0.01)
+
+  def go_to_random_pose_goal_2(self):
+    # Copy class variables to local variables to make the web tutorials more clear.
+    # In practice, you should use the class variables directly unless you have a good
+    # reason not to.
+    group = self.group
+
+    ## BEGIN_SUB_TUTORIAL plan_to_pose
+    ##
+    ## Planning to a Pose Goal
+    ## ^^^^^^^^^^^^^^^^^^^^^^^
+    ## We can plan a motion for this group to a desired pose for the
+    ## end-effector:
+    
+    # pose_goal = geometry_msgs.msg.Pose()
+    # pose_goal.orientation.w = 1.0
+    # pose_goal.position.x = 0.4
+    # pose_goal.position.y = 0.1
+    # pose_goal.position.z = 0.4
+    # group.set_pose_target(pose_goal)
+
+    range_min = 0.1
+    range_max = 0.5
+    range_diff = range_max - range_min
+    angle_min = -2*np.pi
+    angle_max = 2*np.pi
+    angle_diff = angle_max - angle_min
+    for i in range(10):
+      pose_goal = geometry_msgs.msg.Pose()
+      quat = quaternion_from_euler(np.random.rand()*angle_diff + angle_min,
+                                  np.random.rand()*angle_diff + angle_min,
+                                  np.random.rand()*angle_diff + angle_min,
+                                  )
+      pose_goal.orientation.x = quat[0]
+      pose_goal.orientation.y = quat[1]
+      pose_goal.orientation.z = quat[2]
+      pose_goal.orientation.w = quat[3]
+      pose_goal.position.x = (np.random.rand()*range_diff + range_min) * np.random.choice([-1, 1])
+      pose_goal.position.y = np.random.rand()*range_diff + range_min * np.random.choice([-1, 1])
+      pose_goal.position.z = np.random.rand()*range_diff + range_min
+      group.set_pose_target(pose_goal)
+      
+      plan = group.go(wait=True)
+      
+      # Calling `stop()` ensures that there is no residual movement
+      group.stop()
+      # It is always good to clear your targets after planning with poses.
+      # Note: there is no equivalent function for clear_joint_value_targets()
+      group.clear_pose_targets()
+
+      ## END_SUB_TUTORIAL
+
+      # For testing:
+      # Note that since this section of code will not be included in the tutorials
+      # we use the class variable rather than the copied state variable
+      
+      current_pose = self.group.get_current_pose().pose
+      current_joints = self.group.get_current_joint_values()
+      print(i, 'current:', current_joints)
     
     return all_close(pose_goal, current_pose, 0.01)
 
@@ -660,7 +650,7 @@ def main():
 
     print "============ Press `Enter` to execute a movement using a RANDOM pose goal ..."
     raw_input()
-    tutorial.go_to_random_pose_goal()    
+    tutorial.go_to_random_pose_goal_2()    
     exit()
 
     print "============ Press `Enter` to plan and display a Cartesian path ..."       
