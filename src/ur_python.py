@@ -183,7 +183,7 @@ class MoveGroupPythonIntefaceTutorial(object):
     box_pose = geometry_msgs.msg.PoseStamped()
     box_pose.header.frame_id = group.get_planning_frame()
     box_pose.pose.position.x = 0
-    box_pose.pose.position.y = -0.3
+    box_pose.pose.position.y = -1.0
     box_pose.pose.position.z = 0.3
     box_pose.pose.orientation.w = 1.0
     self.scene.add_box(self.box_name, box_pose, (0.2, 0.2, 0.2))
