@@ -45,8 +45,8 @@ class DataSubscriber:
             # rospy.spin()
             while not rospy.is_shutdown():
                 rospy.loginfo(self.joint_angles)
-                # cv2.imwrite('image1.png', self.image1)
-                # cv2.imwrite('image2.png', self.image2)
+                cv2.imwrite('image1.jpg', self.image1, [int(cv2.IMWRITE_JPEG_QUALITY), 85])
+                cv2.imwrite('image2.jpg', self.image2, [int(cv2.IMWRITE_JPEG_QUALITY), 85])
                 
                 self.rate.sleep()
         except KeyboardInterrupt:
