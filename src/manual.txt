@@ -25,3 +25,15 @@ roslaunch ur_robot_driver ur3_bringup.launch robot_ip:=192.168.100.1
 roslaunch ur3_moveit_config ur3_moveit_planning_execution.launch limited:=true
 
 rosrun ur3_hong ur_python.py
+
+
+# Multiple Camera node launching
+roslaunch realsense2_camera rs_multiple_devices.launch serial_no_camera1:=f0171556 serial_no_camera2:=f0141066 align_depth:=true
+topics: $ rostopic list
+/camera1/color/image_raw        # color
+/camera1/depth/image_rect_raw   # depth
+/camera1/confidence/image_rect_raw   # confidence
+
+/camera2/color/image_raw        # color
+/camera2/depth/image_rect_raw   # depth
+/camera2/confidence/image_rect_raw   # confidence
