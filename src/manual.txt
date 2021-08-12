@@ -6,7 +6,7 @@ roslaunch ur3_moveit_config moveit_rviz.launch config:=true
 
 rosrun ur3_hong ur_python.py
 
-
+rosrun ur3_hong data_subscriber.py
 
 
 https://github.com/awesomebytes/dmp_gestures/blob/master/dmp_gestures/src/dmp_gestures/dmp_execution.py#L60-L85

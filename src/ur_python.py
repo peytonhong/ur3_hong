@@ -162,6 +162,8 @@ class MoveGroupPythonIntefaceTutorial(object):
     self.planning_frame = planning_frame
     self.eef_link = eef_link
     self.group_names = group_names
+    self.joint_states = JointState()
+    self.joint_states.header.frame_id = group.get_planning_frame()
 
     self.plane_name = "ground_plane"
     self.box_name = "box"
@@ -196,10 +198,10 @@ class MoveGroupPythonIntefaceTutorial(object):
     # Copy class variables to local variables to make the web tutorials more clear.
     # In practice, you should use the class variables directly unless you have a good
     # reason not to.
-    f = open('/home/hyosung/catkin_ws/src/ur3_hong/src/temp.csv','r')
-    rdr = csv.reader(f)
-    for line in rdr:
-	    print(float(line[0]))
+    # f = open('/home/hyosung/catkin_ws/src/ur3_hong/src/temp.csv','r')
+    # rdr = csv.reader(f)
+    # for line in rdr:
+	  #   print(float(line[0]))
     group = self.group
 
     ## BEGIN_SUB_TUTORIAL plan_to_joint_state
@@ -210,12 +212,18 @@ class MoveGroupPythonIntefaceTutorial(object):
     ## thing we want to do is move it to a slightly better configuration.
     # We can get the joint values from the group and adjust some of the values:
     joint_goal = group.get_current_joint_values()
-    joint_goal[0] = float(line[0])
-    joint_goal[1] = float(line[1])
-    joint_goal[2] = float(line[2])
-    joint_goal[3] = float(line[3])
-    joint_goal[4] = float(line[4])
-    joint_goal[5] = float(line[5])
+    joint_goal[0] = 0.0
+    joint_goal[1] = -np.pi/2
+    joint_goal[2] = 0.0
+    joint_goal[3] = -np.pi/2
+    joint_goal[4] = 0.0
+    joint_goal[5] = 0.0
+    # joint_goal[0] = np.pi/2
+    # joint_goal[1] = -np.pi/2
+    # joint_goal[2] = np.pi/2
+    # joint_goal[3] = -np.pi
+    # joint_goal[4] = -np.pi/2
+    # joint_goal[5] = 0.0
 
     # The go command can be called with joint values, poses, or without any
     # parameters if you have already set the pose or joint target for the group
@@ -229,7 +237,8 @@ class MoveGroupPythonIntefaceTutorial(object):
     # For testing:
     # Note that since this section of code will not be included in the tutorials
     # we use the class variable rather than the copied state variable
-    current_joints = self.group.get_current_joint_values()
+    current_joints = self.group.get_current_joint_values()    
+    print('current:', current_joints)
     return all_close(joint_goal, current_joints, 0.01)
 
 
@@ -340,7 +349,7 @@ class MoveGroupPythonIntefaceTutorial(object):
     angle_min = -2*np.pi
     angle_max = 2*np.pi
     angle_diff = angle_max - angle_min
-    for i in range(10):
+    for i in range(500): # number of random motion plans
       pose_goal = geometry_msgs.msg.Pose()
       quat = quaternion_from_euler(np.random.rand()*angle_diff + angle_min,
                                   np.random.rand()*angle_diff + angle_min,
@@ -371,7 +380,8 @@ class MoveGroupPythonIntefaceTutorial(object):
       
       current_pose = self.group.get_current_pose().pose
       current_joints = self.group.get_current_joint_values()
-      print(i, 'current:', type(current_joints), current_joints)
+      print(i, 'current:', current_joints)
+      # print(i, 'current:', self.robot.get_current_state())
     
     return all_close(pose_goal, current_pose, 0.01)
 
@@ -642,15 +652,20 @@ def main():
     # print "============ Press `Enter` to execute a movement using a joint state goal ..."
     # raw_input()
     # tutorial.go_to_joint_state()
-    
+    # exit()
     # print "============ Press `Enter` to execute a movement using a pose goal ..."
     # raw_input()
     # tutorial.go_to_pose_goal()
 
     print "============ Press `Enter` to execute a movement using a RANDOM pose goal ..."
     raw_input()
-    tutorial.go_to_random_pose_goal_2()    
+    tutorial.go_to_random_pose_goal_2()
     exit()
+
+    print "============ Press `Enter` to execute a movement using a joint state goal ..."
+    raw_input()
+    tutorial.go_to_joint_state()
+    
 
     print "============ Press `Enter` to plan and display a Cartesian path ..."       
     raw_input()
