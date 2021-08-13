@@ -19,8 +19,8 @@ Connect LAN cable to PC and Setting Network Manual IP address
     gateway: 0.0.0.0
 
 ping 192.168.100.1
-
-roslaunch ur_robot_driver ur3_bringup.launch robot_ip:=192.168.100.1
+ur3_macro.xacro에서 safety_limit을 true로 설정하였음
+roslaunch ur_robot_driver ur3_bringup.launch limited:=true robot_ip:=192.168.100.1
 
 roslaunch ur3_moveit_config ur3_moveit_planning_execution.launch limited:=true
 
@@ -37,3 +37,12 @@ topics: $ rostopic list
 /camera2/color/image_raw        # color
 /camera2/depth/image_rect_raw   # depth
 /camera2/confidence/image_rect_raw   # confidence
+
+# UR3 로봇 작동 절차
+1. 펜던트에서 전원을 켠다.
+2. 프로그램 로봇 메뉴 선택
+3. 좌측 상단 빨간색 동그라미 버튼 선택
+4. 켜짐 -> 시작 -> 정상 뜨면 하단에 확인 선택
+5. 프로그램 로드 -> urcaptest.urp 열기
+6. PC에서 bringup 코드 실행
+7. 하단에 플레이 버튼 선택
