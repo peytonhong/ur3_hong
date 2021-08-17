@@ -343,51 +343,53 @@ class MoveGroupPythonIntefaceTutorial(object):
     # pose_goal.position.y = 0.1
     # pose_goal.position.z = 0.4
     # group.set_pose_target(pose_goal)
-
+    
     range_min = 0.1
     range_max = 0.5
     range_diff = range_max - range_min
     angle_min = -2*np.pi
     angle_max = 2*np.pi
     angle_diff = angle_max - angle_min
-    for i in range(500): # number of random motion plans
+    for i in range(50): # number of random motion plans
       if i%5 == 0:
+        print('go_to_joint_state()')
         self.go_to_joint_state()
       else:
-        pose_goal = geometry_msgs.msg.Pose()
-        quat = quaternion_from_euler(np.random.rand()*angle_diff + angle_min,
-                                    np.random.rand()*angle_diff + angle_min,
-                                    np.random.rand()*angle_diff + angle_min,
-                                    )
-        pose_goal.orientation.x = quat[0]
-        pose_goal.orientation.y = quat[1]
-        pose_goal.orientation.z = quat[2]
-        pose_goal.orientation.w = quat[3]
-        pose_goal.position.x = (np.random.rand()*range_diff + range_min) * np.random.choice([-1, 1])
-        pose_goal.position.y = np.random.rand()*range_diff + range_min * np.random.choice([-1, 1])
-        pose_goal.position.z = np.random.rand()*range_diff + range_min
-        group.set_pose_target(pose_goal)
-        
-        plan = group.go(wait=True)
-        
+        # pose_goal = geometry_msgs.msg.Pose()
+        # quat = quaternion_from_euler(np.random.rand()*angle_diff + angle_min,
+        #                             np.random.rand()*angle_diff + angle_min,
+        #                             np.random.rand()*angle_diff + angle_min,
+        #                             )
+        # pose_goal.orientation.x = quat[0]
+        # pose_goal.orientation.y = quat[1]
+        # pose_goal.orientation.z = quat[2]
+        # pose_goal.orientation.w = quat[3]
+        # pose_goal.position.x = (np.random.rand()*range_diff + range_min) * np.random.choice([-1, 1])
+        # pose_goal.position.y = np.random.rand()*range_diff + range_min * np.random.choice([-1, 1])
+        # pose_goal.position.z = np.random.rand()*range_diff + range_min
+        # group.set_pose_target(pose_goal)
+        # group.set_random_target()
+        joint_goal = group.get_random_joint_values()
+        print('before plan')
+        plan = group.go(joint_goal, wait=True)
+        print('after plan')
         # Calling `stop()` ensures that there is no residual movement
         group.stop()
         # It is always good to clear your targets after planning with poses.
         # Note: there is no equivalent function for clear_joint_value_targets()
-        group.clear_pose_targets()
+        # group.clear_pose_targets()
+      ## END_SUB_TUTORIAL
 
-        ## END_SUB_TUTORIAL
-
-        # For testing:
-        # Note that since this section of code will not be included in the tutorials
-        # we use the class variable rather than the copied state variable
+      # For testing:
+      # Note that since this section of code will not be included in the tutorials
+      # we use the class variable rather than the copied state variable
         
       current_pose = self.group.get_current_pose().pose
       current_joints = self.group.get_current_joint_values()
       print(i, 'current:', current_joints)
         # print(i, 'current:', self.robot.get_current_state())
     
-    return all_close(pose_goal, current_pose, 0.01)
+    # return all_close(pose_goal, current_pose, 0.01)
 
   def go_to_pose_goal(self):
     # Copy class variables to local variables to make the web tutorials more clear.
@@ -664,12 +666,12 @@ def main():
     print "============ Press `Enter` to execute a movement using a RANDOM pose goal ..."
     raw_input()
     tutorial.go_to_random_pose_goal_2()
-    exit()
+    
 
     print "============ Press `Enter` to execute a movement using a joint state goal ..."
     raw_input()
     tutorial.go_to_joint_state()
-    
+    exit()
 
     print "============ Press `Enter` to plan and display a Cartesian path ..."       
     raw_input()
