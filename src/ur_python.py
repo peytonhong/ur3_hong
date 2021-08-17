@@ -212,19 +212,19 @@ class MoveGroupPythonIntefaceTutorial(object):
     ## thing we want to do is move it to a slightly better configuration.
     # We can get the joint values from the group and adjust some of the values:
     joint_goal = group.get_current_joint_values()
-    joint_goal[0] = 0.0
-    joint_goal[1] = -np.pi/2
-    joint_goal[2] = 0.0
-    joint_goal[3] = -np.pi/2
-    joint_goal[4] = 0.0
-    joint_goal[5] = 0.0
+    # joint_goal[0] = 0.0
+    # joint_goal[1] = -np.pi/2
+    # joint_goal[2] = 0.0
+    # joint_goal[3] = -np.pi/2
+    # joint_goal[4] = 0.0
+    # joint_goal[5] = 0.0
     # joint_goal[0] = np.pi/2
     # joint_goal[1] = -np.pi/2
     # joint_goal[2] = np.pi/2
     # joint_goal[3] = -np.pi
     # joint_goal[4] = -np.pi/2
     # joint_goal[5] = 0.0
-
+    joint_goal = [-0.2814071814166468, -1.1280654112445276, 0.09261109679937363, -2.0429304281817835, -0.30792457262148076, 0.07315320521593094]
     # The go command can be called with joint values, poses, or without any
     # parameters if you have already set the pose or joint target for the group
     group.go(joint_goal, wait=True)
@@ -649,10 +649,10 @@ def main():
     raw_input()
     tutorial = MoveGroupPythonIntefaceTutorial()
 
-    # print "============ Press `Enter` to execute a movement using a joint state goal ..."
-    # raw_input()
-    # tutorial.go_to_joint_state()
-    # exit()
+    print "============ Press `Enter` to execute a movement using a joint state goal ..."
+    raw_input()
+    tutorial.go_to_joint_state()
+    exit()
     # print "============ Press `Enter` to execute a movement using a pose goal ..."
     # raw_input()
     # tutorial.go_to_pose_goal()
