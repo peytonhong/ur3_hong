@@ -29,7 +29,7 @@ class DataSubscriber:
         self.rate = rospy.Rate(10) # 10hz   
         self.state = None
         self.data_count = 0
-        self.base_dir = '/home/hyosung/dataset/'
+        self.base_dir = '/home/hyosung/dataset2/'
         self.set_dataset_directory()
         
         
