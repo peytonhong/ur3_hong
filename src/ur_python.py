@@ -227,6 +227,8 @@ class MoveGroupPythonIntefaceTutorial(object):
     # joint_goal = [-0.2814071814166468, -1.1280654112445276, 0.09261109679937363, -2.0429304281817835, -0.30792457262148076, 0.07315320521593094]
     # joint_goal = [0,0,0,0,0,0]
     # The go command can be called with joint values, poses, or without any
+    
+    print('target joint: ', joint_goal)
     # parameters if you have already set the pose or joint target for the group
     group.go(joint_goal, wait=True)
 
@@ -240,7 +242,30 @@ class MoveGroupPythonIntefaceTutorial(object):
     # we use the class variable rather than the copied state variable
     current_joints = self.group.get_current_joint_values()    
     print('current:', current_joints)
-    return all_close(joint_goal, current_joints, 0.01)
+    print('result: ', all_close(joint_goal, current_joints, 0.01))
+    # return all_close(joint_goal, current_joints, 0.01)
+    
+  def go_to_random_joint_state(self):
+    # Copy class variables to local variables to make the web tutorials more clear.
+    # In practice, you should use the class variables directly unless you have a good
+    # reason not to.
+    group = self.group
+    for i in range(10):
+      joint_goal = group.get_random_joint_values()
+      print(i, 'target joint: ', joint_goal)
+      # The go command can be called with joint values, poses, or without any        
+      # parameters if you have already set the pose or joint target for the group
+      group.go(joint_goal, wait=True)
+      # Calling ``stop()`` ensures that there is no residual movement
+      group.stop()
+
+      # For testing:
+      # Note that since this section of code will not be included in the tutorials
+      # we use the class variable rather than the copied state variable
+      current_joints = self.group.get_current_joint_values()    
+      print(i, 'current:', current_joints)
+      print('result: ', all_close(joint_goal, current_joints, 0.01))
+    # return all_close(joint_goal, current_joints, 0.01)  
 
 
   def go_to_random_pose_goal(self):
@@ -350,7 +375,7 @@ class MoveGroupPythonIntefaceTutorial(object):
     angle_min = -2*np.pi
     angle_max = 2*np.pi
     angle_diff = angle_max - angle_min
-    for i in range(50): # number of random motion plans
+    for i in range(5): # number of random motion plans
       if i%5 == 0:
         print('go_to_joint_state()')
         self.go_to_joint_state()
@@ -371,6 +396,7 @@ class MoveGroupPythonIntefaceTutorial(object):
         # group.set_random_target()
         joint_goal = group.get_random_joint_values()
         print('before plan')
+        print(i, 'target joint: ', joint_goal)
         plan = group.go(joint_goal, wait=True)
         print('after plan')
         # Calling `stop()` ensures that there is no residual movement
@@ -384,12 +410,13 @@ class MoveGroupPythonIntefaceTutorial(object):
       # Note that since this section of code will not be included in the tutorials
       # we use the class variable rather than the copied state variable
         
-      current_pose = self.group.get_current_pose().pose
-      current_joints = self.group.get_current_joint_values()
-      print(i, 'current:', current_joints)
-        # print(i, 'current:', self.robot.get_current_state())
+      # current_pose = self.group.get_current_pose().pose
+        current_joints = self.group.get_current_joint_values()
+        print(i, 'current:', current_joints)
+          # print(i, 'current:', self.robot.get_current_state())
+        print('result: ', all_close(joint_goal, current_joints, 0.01))
     
-    # return all_close(pose_goal, current_pose, 0.01)
+    # return all_close(joint_goal, current_joints, 0.01)
 
   def go_to_pose_goal(self):
     # Copy class variables to local variables to make the web tutorials more clear.
@@ -663,14 +690,14 @@ def main():
     # raw_input()
     # tutorial.go_to_pose_goal()
 
-    print "============ Press `Enter` to execute a movement using a RANDOM pose goal ..."
-    raw_input()
-    tutorial.go_to_random_pose_goal_2()
+    # print "============ Press `Enter` to execute a movement using a RANDOM pose goal ..."
+    # raw_input()
+    # tutorial.go_to_random_pose_goal_2()
     
 
-    print "============ Press `Enter` to execute a movement using a joint state goal ..."
+    print "============ Press `Enter` to execute a movement using a RANDOM joint state goal ..."
     raw_input()
-    tutorial.go_to_joint_state()
+    tutorial.go_to_random_joint_state()
     exit()
 
     print "============ Press `Enter` to plan and display a Cartesian path ..."       
