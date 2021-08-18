@@ -265,6 +265,9 @@ class MoveGroupPythonIntefaceTutorial(object):
       current_joints = self.group.get_current_joint_values()    
       print(i, 'current:', current_joints)
       print('result: ', all_close(joint_goal, current_joints, 0.01))
+      
+      # print('Press anykey to continue......')
+      # raw_input()
     # return all_close(joint_goal, current_joints, 0.01)  
 
 
@@ -375,46 +378,56 @@ class MoveGroupPythonIntefaceTutorial(object):
     angle_min = -2*np.pi
     angle_max = 2*np.pi
     angle_diff = angle_max - angle_min
-    for i in range(5): # number of random motion plans
+    for i in range(10): # number of random motion plans
       if i%5 == 0:
         print('go_to_joint_state()')
         self.go_to_joint_state()
       else:
-        # pose_goal = geometry_msgs.msg.Pose()
-        # quat = quaternion_from_euler(np.random.rand()*angle_diff + angle_min,
-        #                             np.random.rand()*angle_diff + angle_min,
-        #                             np.random.rand()*angle_diff + angle_min,
-        #                             )
-        # pose_goal.orientation.x = quat[0]
-        # pose_goal.orientation.y = quat[1]
-        # pose_goal.orientation.z = quat[2]
-        # pose_goal.orientation.w = quat[3]
-        # pose_goal.position.x = (np.random.rand()*range_diff + range_min) * np.random.choice([-1, 1])
-        # pose_goal.position.y = np.random.rand()*range_diff + range_min * np.random.choice([-1, 1])
-        # pose_goal.position.z = np.random.rand()*range_diff + range_min
-        # group.set_pose_target(pose_goal)
+        pose_goal = geometry_msgs.msg.Pose()
+        quat = quaternion_from_euler(np.random.rand()*angle_diff + angle_min,
+                                    np.random.rand()*angle_diff + angle_min,
+                                    np.random.rand()*angle_diff + angle_min,
+                                    )
+        pose_goal.orientation.x = quat[0]
+        pose_goal.orientation.y = quat[1]
+        pose_goal.orientation.z = quat[2]
+        pose_goal.orientation.w = quat[3]
+        pose_goal.position.x = (np.random.rand()*range_diff + range_min) * np.random.choice([-1, 1])
+        pose_goal.position.y = np.random.rand()*range_diff + range_min * np.random.choice([-1, 1])
+        pose_goal.position.z = np.random.rand()*range_diff + range_min
+        group.set_pose_target(pose_goal)
+        
+        # (plan, fraction) = group.compute_cartesian_path(
+        #                                [pose_goal],   # waypoints to follow
+        #                                0.01,        # eef_step
+        #                                0.0)         # jump_threshold
+        
+        # joint_goal = plan.joint_trajectory.points[-1].positions
         # group.set_random_target()
-        joint_goal = group.get_random_joint_values()
         print('before plan')
-        print(i, 'target joint: ', joint_goal)
-        plan = group.go(joint_goal, wait=True)
+        # print(i, 'target joint: ', joint_goal)
+        plan = group.go( wait=True)        
+        # group.execute(plan, wait=True)
         print('after plan')
         # Calling `stop()` ensures that there is no residual movement
         group.stop()
         # It is always good to clear your targets after planning with poses.
         # Note: there is no equivalent function for clear_joint_value_targets()
-        # group.clear_pose_targets()
-      ## END_SUB_TUTORIAL
-
-      # For testing:
-      # Note that since this section of code will not be included in the tutorials
-      # we use the class variable rather than the copied state variable
+        group.clear_pose_targets()
+        ## END_SUB_TUTORIAL
         
-      # current_pose = self.group.get_current_pose().pose
+        # For testing:
+        # Note that since this section of code will not be included in the tutorials
+        # we use the class variable rather than the copied state variable
+          
+        # current_pose = self.group.get_current_pose().pose
         current_joints = self.group.get_current_joint_values()
         print(i, 'current:', current_joints)
           # print(i, 'current:', self.robot.get_current_state())
-        print('result: ', all_close(joint_goal, current_joints, 0.01))
+        # print('result: ', all_close(joint_goal, current_joints, 0.01))
+        
+      print('Press anykey to continue......')
+      raw_input()
     
     # return all_close(joint_goal, current_joints, 0.01)
 
@@ -469,7 +482,7 @@ class MoveGroupPythonIntefaceTutorial(object):
     ## for the end-effector to go through:
     ##
     waypoints = []
-
+    
     wpose = group.get_current_pose().pose
     wpose.position.z -= scale * 0.1  # First move up (z)
     wpose.position.y += scale * 0.2  # and sideways (y)
@@ -489,10 +502,6 @@ class MoveGroupPythonIntefaceTutorial(object):
                                        0.01,        # eef_step
                                        0.0)         # jump_threshold
     
-    if self.checkTrajectoryValidity(plan):
-      rospy.loginfo("Trajectory is fine.")
-    else:
-      rospy.loginfo("Trajectory is bad.")
     # Note: We are just planning, not asking move_group to actually move the robot yet:
     return plan, fraction
 
@@ -682,9 +691,9 @@ def main():
     raw_input()
     tutorial = MoveGroupPythonIntefaceTutorial()
 
-    # print "============ Press `Enter` to execute a movement using a joint state goal ..."
-    # raw_input()
-    # tutorial.go_to_joint_state()
+    print "============ Press `Enter` to execute a movement using a joint state goal ..."
+    raw_input()
+    tutorial.go_to_joint_state()
     # exit()
     # print "============ Press `Enter` to execute a movement using a pose goal ..."
     # raw_input()
@@ -693,7 +702,7 @@ def main():
     # print "============ Press `Enter` to execute a movement using a RANDOM pose goal ..."
     # raw_input()
     # tutorial.go_to_random_pose_goal_2()
-    
+    # exit()
 
     print "============ Press `Enter` to execute a movement using a RANDOM joint state goal ..."
     raw_input()
@@ -704,6 +713,7 @@ def main():
     raw_input()
     cartesian_plan, fraction = tutorial.plan_cartesian_path()
     
+
     print "============ Press `Enter` to display a saved trajectory (this will replay the Cartesian path)  ..."
     raw_input()
     tutorial.display_trajectory(cartesian_plan)
@@ -711,7 +721,7 @@ def main():
     print "============ Press `Enter` to execute a saved path ..."
     raw_input()
     tutorial.execute_plan(cartesian_plan)
-
+    
     print "============ Press `Enter` to add a box to the planning scene ..."
     raw_input()
     tutorial.add_box()
