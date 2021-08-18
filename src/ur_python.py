@@ -250,7 +250,7 @@ class MoveGroupPythonIntefaceTutorial(object):
     # In practice, you should use the class variables directly unless you have a good
     # reason not to.
     group = self.group
-    for i in range(10):
+    for i in range(500):
       joint_goal = group.get_random_joint_values()
       print(i, 'target joint: ', joint_goal)
       # The go command can be called with joint values, poses, or without any        
@@ -262,7 +262,7 @@ class MoveGroupPythonIntefaceTutorial(object):
       # For testing:
       # Note that since this section of code will not be included in the tutorials
       # we use the class variable rather than the copied state variable
-      current_joints = self.group.get_current_joint_values()    
+      current_joints = self.group.get_current_joint_values()
       print(i, 'current:', current_joints)
       print('result: ', all_close(joint_goal, current_joints, 0.01))
       

@@ -81,9 +81,9 @@ class DataSubscriber:
                     image2_path = self.dataset_dir + '/cam2/' + str(self.data_count).zfill(4) + '.jpg'
                     cv2.imwrite(image1_path, self.image1, [int(cv2.IMWRITE_JPEG_QUALITY), 85])
                     cv2.imwrite(image2_path, self.image2, [int(cv2.IMWRITE_JPEG_QUALITY), 85])
-                    print(self.robot.get_current_state().joint_state.position)  ##### This has litte error
+                    # print(self.robot.get_current_state().joint_state.position)  ##### This has litte error
                     print(self.group.get_current_joint_values())   ############### compare both variables
-                    print(self.joint_angles)   ##### This is incorrect
+                    # print(self.joint_angles)   ##### This is incorrect
                     annotation = {'joint_angles': self.group.get_current_joint_values()}                     
                     with open(json_path, 'w') as json_file:
                         json.dump(annotation, json_file)
